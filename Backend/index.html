@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harvard Library - Sistem Peminjaman</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f0;
+        }
+        .harvard-font {
+            font-family: 'Crimson Text', serif;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(165, 28, 48, 0.1);
+        }
+        .harvard-red {
+            color: #A51C30;
+        }
+        .bg-harvard-red {
+            background-color: #A51C30;
+        }
+        .harvard-gold {
+            color: #C4961A;
+        }
+        .bg-harvard-gold {
+            background-color: #C4961A;
+        }
+        .book-shadow {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        }
+        .sidebar-gradient {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+        }
+        .input-elegant {
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        .input-elegant:focus {
+            border-color: #A51C30;
+            box-shadow: 0 0 0 3px rgba(165, 28, 48, 0.1);
+        }
+        .btn-harvard {
+            background: linear-gradient(135deg, #A51C30 0%, #8B1530 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-harvard:hover {
+            background: linear-gradient(135deg, #8B1530 0%, #6B1020 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(165, 28, 48, 0.3);
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ornament {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #A51C30, #C4961A);
+            margin: 1rem auto;
+        }
+        .book-spine {
+            background: linear-gradient(90deg, #8B4513 0%, #A0522D 50%, #8B4513 100%);
+            border-left: 4px solid #654321;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Login/Signin Page -->
+    <div id="authPage" class="min-h-screen flex items-center justify-center relative overflow-hidden">
+        <!-- Background Image with Overlay -->
+        <div class="absolute inset-0 z-0">
+            <img src="https://images.unsplash.com/photo-1568667256549-094345857637?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80" 
+                 alt="Library Interior" 
+                 class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-[#1a1a2e]/90"></div>
+        </div>
+
+        <!-- Decorative Elements -->
+        <div class="absolute top-0 left-0 w-full h-full z-0 opacity-10">
+            <div class="absolute top-10 left-10 w-32 h-32 border-2 border-[#C4961A] rounded-full"></div>
+            <div class="absolute bottom-20 right-20 w-48 h-48 border border-[#A51C30] rotate-45"></div>
+        </div>
+
+        <!-- Auth Card -->
+        <div class="relative z-10 w-full max-w-md mx-4">
+            <div class="glass-panel rounded-2xl p-8 shadow-2xl">
+                <!-- Logo & Header -->
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-[#A51C30] to-[#8B1530] rounded-full flex items-center justify-center shadow-lg">
+                        <i data-lucide="book-open" class="w-10 h-10 text-white"></i>
+                    </div>
+                    <h1 class="harvard-font text-3xl font-bold text-gray-800 mb-1">Harvard Library</h1>
+                    <p class="text-sm text-gray-500 tracking-widest uppercase">Sistem Manajemen Peminjaman</p>
+                    <div class="ornament"></div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex mb-6 bg-gray-100 rounded-lg p-1">
+                    <button onclick="switchTab('login')" id="tabLogin" 
+                            class="flex-1 py-2.5 rounded-md text-sm font-semibold transition-all bg-white text-[#A51C30] shadow-sm">
+                        Masuk
+                    </button>
+                    <button onclick="switchTab('register')" id="tabRegister" 
+                            class="flex-1 py-2.5 rounded-md text-sm font-semibold transition-all text-gray-500 hover:text-gray-700">
+                        Daftar
+                    </button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-5 fade-in">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Email / NPM</label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                            <input type="text" placeholder="Masukkan email atau NPM" 
+                                   class="input-elegant w-full pl-10 pr-4 py-3 rounded-lg bg-white text-gray-800 focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Kata Sandi</label>
+                        <div class="relative">
+                            <i data-lucide="lock" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                            <input type="password" placeholder="Masukkan kata sandi" 
+                                   class="input-elegant w-full pl-10 pr-4 py-3 rounded-lg bg-white text-gray-800 focus:outline-none">
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <label class="flex items-center text-gray-600">
+                            <input type="checkbox" class="mr-2 rounded text-[#A51C30] focus:ring-[#A51C30]">
+                            Ingat saya
+                        </label>
+                        <a href="#" class="text-[#A51C30] hover:underline font-medium">Lupa password?</a>
+                    </div>
+                    <button type="button" onclick="handleLogin()" 
+                            class="btn-harvard w-full py-3.5 rounded-lg text-white font-semibold shadow-lg flex items-center justify-center gap-2">
+                        <i data-lucide="log-in" class="w-5 h-5"></i>
+                        Masuk ke Sistem
+                    </button>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" class="space-y-4 hidden fade-in">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                            <input type="text" placeholder="Nama" 
+                                   class="input-elegant w-full px-4 py-2.5 rounded-lg bg-white focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">NPM</label>
+                            <input type="text" placeholder="NPM" 
+                                   class="input-elegant w-full px-4 py-2.5 rounded-lg bg-white focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" placeholder="email@universitas.ac.id" 
+                               class="input-elegant w-full px-4 py-2.5 rounded-lg bg-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">No. KTM</label>
+                        <input type="text" placeholder="Nomor Kartu Tanda Mahasiswa" 
+                               class="input-elegant w-full px-4 py-2.5 rounded-lg bg-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kata Sandi</label>
+                        <input type="password" placeholder="Minimal 8 karakter" 
+                               class="input-elegant w-full px-4 py-2.5 rounded-lg bg-white focus:outline-none">
+                    </div>
+                    <button type="button" onclick="handleRegister()" 
+                            class="btn-harvard w-full py-3 rounded-lg text-white font-semibold shadow-lg flex items-center justify-center gap-2">
+                        <i data-lucide="user-plus" class="w-5 h-5"></i>
+                        Daftar Anggota
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center text-sm text-gray-500">
+                    <p>© 2026 Harvard Library System. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (Hidden initially) -->
+    <div id="dashboard" class="hidden min-h-screen flex">
+        <!-- Sidebar -->
+        <aside class="w-72 sidebar-gradient text-white flex flex-col shadow-2xl">
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-[#A51C30] rounded-lg flex items-center justify-center">
+                        <i data-lucide="book-open" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="harvard-font text-xl font-bold">Harvard</h2>
+                        <p class="text-xs text-gray-400">Library System</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="#" onclick="showPage('home')" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                <a href="#" onclick="showPage('borrow')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-all">
+                    <i data-lucide="book-plus" class="w-5 h-5"></i>
+                    <span>Peminjaman</span>
+                </a>
+                <a href="#" onclick="showPage('collection')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-all">
+                    <i data-lucide="library" class="w-5 h-5"></i>
+                    <span>Koleksi Buku</span>
+                </a>
+                <a href="#" onclick="showPage('members')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-all">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span>Anggota</span>
+                </a>
+                <a href="#" onclick="showPage('reports')" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-white/10 hover:text-white transition-all">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>Laporan</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-white/10">
+                <div class="flex items-center gap-3 px-4 py-3 rounded-lg bg-white/5">
+                    <img src="https://ui-avatars.com/api/?name=Pustakawan&background=A51C30&color=fff" class="w-10 h-10 rounded-full">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium">Pustakawan</p>
+                        <p class="text-xs text-gray-400">Admin</p>
+                    </div>
+                    <button onclick="logout()" class="text-gray-400 hover:text-white">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto">
+            <!-- Top Bar -->
+            <header class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between sticky top-0 z-20">
+                <div>
+                    <h2 id="pageTitle" class="harvard-font text-2xl font-bold text-gray-800">Dashboard</h2>
+                    <p class="text-sm text-gray-500">Selamat datang di Sistem Perpustakaan</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <i data-lucide="search" class="absolute left-3 top-2.5 w-5 h-5 text-gray-400"></i>
+                        <input type="text" placeholder="Cari buku, anggota..." 
+                               class="pl-10 pr-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:border-[#A51C30] w-64">
+                    </div>
+                    <button class="relative p-2 rounded-full hover:bg-gray-100">
+                        <i data-lucide="bell" class="w-6 h-6 text-gray-600"></i>
+                        <span class="absolute top-1 right-1 w-2 h-2 bg-[#A51C30] rounded-full"></span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="p-8">
+                <!-- Dashboard Content -->
+                <div id="homePage" class="space-y-8 fade-in">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-white rounded-xl p-6 book-shadow hover-lift border-l-4 border-[#A51C30]">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-red-50 rounded-lg">
+                                    <i data-lucide="book-open" class="w-6 h-6 text-[#A51C30]"></i>
+                                </div>
+                                <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">+12%</span>
+                            </div>
+                            <h3 class="text-3xl font-bold text-gray-800">2,847</h3>
+                            <p class="text-sm text-gray-500 mt-1">Total Koleksi</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 book-shadow hover-lift border-l-4 border-[#C4961A]">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-yellow-50 rounded-lg">
+                                    <i data-lucide="book-up" class="w-6 h-6 text-[#C4961A]"></i>
+                                </div>
+                                <span class="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">-5%</span>
+                            </div>
+                            <h3 class="text-3xl font-bold text-gray-800">156</h3>
+                            <p class="text-sm text-gray-500 mt-1">Sedang Dipinjam</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 book-shadow hover-lift border-l-4 border-blue-500">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-blue-50 rounded-lg">
+                                    <i data-lucide="users" class="w-6 h-6 text-blue-500"></i>
+                                </div>
+                                <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">+8%</span>
+                            </div>
+                            <h3 class="text-3xl font-bold text-gray-800">1,203</h3>
+                            <p class="text-sm text-gray-500 mt-1">Total Anggota</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 book-shadow hover-lift border-l-4 border-purple-500">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-purple-50 rounded-lg">
+                                    <i data-lucide="clock" class="w-6 h-6 text-purple-500"></i>
+                                </div>
+                                <span class="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">23</span>
+                            </div>
+                            <h3 class="text-3xl font-bold text-gray-800">23</h3>
+                            <p class="text-sm text-gray-500 mt-1">Pending Request</p>
+                        </div>
+                    </div>
+
+                    <!-- Recent Borrowings -->
+                    <div class="bg-white rounded-xl book-shadow overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                            <h3 class="font-bold text-lg text-gray-800">Peminjaman Terbaru</h3>
+                            <button class="text-[#A51C30] text-sm font-medium hover:underline">Lihat Semua</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Anggota</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Buku</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tanggal Pinjam</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <img src="https://ui-avatars.com/api/?name=Ahmad+Rizki&background=random" class="w-8 h-8 rounded-full">
+                                                <div>
+                                                    <p class="font-medium text-gray-800">Ahmad Rizki</p>
+                                                    <p class="text-xs text-gray-500">2021001</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <p class="font-medium text-gray-800">The Great Gatsby</p>
+                                            <p class="text-xs text-gray-500">F. Scott Fitzgerald</p>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-600">28 Mei 2026</td>
+                                        <td class="px-6 py-4">
+                                            <span class="status-badge bg-green-100 text-green-700">Aktif</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <button class="text-[#A51C30] hover:bg-red-50 p-2 rounded-lg transition-colors">
+                                                <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <img src="https://ui-avatars.com/api/?name=Siti+Aminah&background=random" class="w-8 h-8 rounded-full">
+                                                <div>
+                                                    <p class="font-medium text-gray-800">Siti Aminah</p>
+                                                    <p class="text-xs text-gray-500">2021002</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <p class="font-medium text-gray-800">Introduction to Algorithms</p>
+                                            <p class="text-xs text-gray-500">Thomas H. Cormen</p>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-600">25 Mei 2026</td>
+                                        <td class="px-6 py-4">
+                                            <span class="status-badge bg-yellow-100 text-yellow-700">Pending</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <button class="text-[#A51C30] hover:bg-red-50 p-2 rounded-lg transition-colors">
+                                                <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Borrowing Process Page -->
+                <div id="borrowPage" class="hidden space-y-6 fade-in">
+                    <div class="bg-gradient-to-r from-[#A51C30] to-[#8B1530] rounded-xl p-8 text-white shadow-xl">
+                        <h3 class="harvard-font text-2xl font-bold mb-2">Proses Peminjaman Bahan Pustaka</h3>
+                        <p class="text-red-100">Ikuti prosedur berikut untuk memproses peminjaman buku</p>
+                    </div>
+
+                    <!-- Process Steps -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Step 1: Check Availability -->
+                        <div class="bg-white rounded-xl book-shadow p-6">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 rounded-full bg-[#A51C30] text-white flex items-center justify-center font-bold">1</div>
+                                <h4 class="font-bold text-gray-800">Pemeriksaan Ketersediaan</h4>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cari Koleksi</label>
+                                    <div class="relative">
+                                        <input type="text" id="searchBook" placeholder="Judul buku, ISBN, atau pengarang..." 
+                                               class="input-elegant w-full pl-4 pr-10 py-2.5 rounded-lg focus:outline-none"
+                                               onkeyup="checkAvailability()">
+                                        <i data-lucide="search" class="absolute right-3 top-2.5 w-5 h-5 text-gray-400"></i>
+                                    </div>
+                                </div>
+                                <div id="availabilityResult" class="hidden p-4 rounded-lg bg-gray-50 border border-gray-200">
+                                    <!-- Dynamic content -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Member Verification -->
+                        <div class="bg-white rounded-xl book-shadow p-6">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 rounded-full bg-[#C4961A] text-white flex items-center justify-center font-bold">2</div>
+                                <h4 class="font-bold text-gray-800">Verifikasi Anggota</h4>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nomor KTM</label>
+                                    <div class="relative">
+                                        <input type="text" id="ktmInput" placeholder="Scan atau masukkan nomor KTM" 
+                                               class="input-elegant w-full pl-4 pr-10 py-2.5 rounded-lg focus:outline-none"
+                                               onblur="verifyMember()">
+                                        <i data-lucide="credit-card" class="absolute right-3 top-2.5 w-5 h-5 text-gray-400"></i>
+                                    </div>
+                                </div>
+                                <div id="memberResult" class="hidden p-4 rounded-lg bg-gray-50 border border-gray-200">
+                                    <!-- Dynamic content -->
+                                </div>
+                                <div class="flex items-center gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                    <i data-lucide="alert-circle" class="w-5 h-5 text-yellow-600"></i>
+                                    <p class="text-sm text-yellow-700">Pastikan anggota membawa KTM fisik</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Process Loan -->
+                        <div class="bg-white rounded-xl book-shadow p-6">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">3</div>
+                                <h4 class="font-bold text-gray-800">Proses Peminjaman</h4>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <p class="text-sm text-gray-600 mb-2">Ringkasan:</p>
+                                    <div id="loanSummary" class="space-y-2">
+                                        <p class="text-sm text-gray-400 italic">Belum ada data peminjaman</p>
+                                    </div>
+                                </div>
+                                <button onclick="processLoan()" id="processBtn"
+                                        class="w-full py-3 bg-gray-300 text-gray-500 rounded-lg font-semibold cursor-not-allowed" disabled>
+                                    Proses Peminjaman
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flowchart Visualization -->
+                    <div class="bg-white rounded-xl book-shadow p-6">
+                        <h4 class="font-bold text-gray-800 mb-4">Alur Proses Peminjaman</h4>
+                        <div class="flex flex-wrap items-center justify-center gap-4 text-sm">
+                            <div class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 font-medium">Mulai</div>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400"></i>
+                            <div class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg border border-gray-300">Terima Request</div>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400"></i>
+                            <div class="px-4 py-2 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-200 font-medium">Cek Ketersediaan</div>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400"></i>
+                            <div class="px-4 py-2 bg-purple-50 text-purple-700 rounded-lg border border-purple-200">Verifikasi KTM</div>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400"></i>
+                            <div class="px-4 py-2 bg-green-50 text-green-700 rounded-lg border border-green-200 font-medium">Input Data</div>
+                            <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400"></i>
+                            <div class="px-4 py-2 bg-[#A51C30]/10 text-[#A51C30] rounded-lg border border-[#A51C30]/20 font-medium">Selesai</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collection Page -->
+                <div id="collectionPage" class="hidden fade-in">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex gap-2">
+                            <button class="px-4 py-2 bg-[#A51C30] text-white rounded-lg font-medium">Semua</button>
+                            <button class="px-4 py-2 bg-white text-gray-600 rounded-lg font-medium hover:bg-gray-50 border border-gray-200">Tersedia</button>
+                            <button class="px-4 py-2 bg-white text-gray-600 rounded-lg font-medium hover:bg-gray-50 border border-gray-200">Dipinjam</button>
+                        </div>
+                        <button class="px-4 py-2 bg-[#C4961A] text-white rounded-lg font-medium flex items-center gap-2 hover:bg-[#B0850A] transition-colors">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            Tambah Buku
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Book Card 1 -->
+                        <div class="bg-white rounded-xl book-shadow hover-lift overflow-hidden group">
+                            <div class="h-48 bg-gradient-to-br from-amber-100 to-orange-200 relative overflow-hidden">
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <i data-lucide="book" class="w-20 h-20 text-amber-800/20"></i>
+                                </div>
+                                <div class="absolute top-3 right-3">
+                                    <span class="status-badge bg-green-100 text-green-700">Tersedia</span>
+                                </div>
+                            </div>
+                            <div class="p-5">
+                                <h4 class="font-bold text-gray-800 mb-1 line-clamp-1">The Great Gatsby</h4>
+                                <p class="text-sm text-gray-500 mb-3">F. Scott Fitzgerald</p>
+                                <div class="flex items-center justify-between text-xs text-gray-400">
+                                    <span>ISBN: 978-3-16</span>
+                                    <span>Rak: A-12</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Book Card 2 -->
+                        <div class="bg-white rounded-xl book-shadow hover-lift overflow-hidden group">
+                            <div class="h-48 bg-gradient-to-br from-blue-100 to-indigo-200 relative overflow-hidden">
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <i data-lucide="book" class="w-20 h-20 text-blue-800/20"></i>
+                                </div>
+                                <div class="absolute top-3 right-3">
+                                    <span class="status-badge bg-red-100 text-red-700">Dipinjam</span>
+                                </div>
+                            </div>
+                            <div class="p-5">
+                                <h4 class="font-bold text-gray-800 mb-1 line-clamp-1">Introduction to Algorithms</h4>
+                                <p class="text-sm text-gray-500 mb-3">Thomas H. Cormen</p>
+                                <div class="flex items-center justify-between text-xs text-gray-400">
+                                    <span>ISBN: 978-0-26</span>
+                                    <span>Rak: B-05</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Tab Switching
+        function switchTab(tab) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const tabLogin = document.getElementById('tabLogin');
+            const tabRegister = document.getElementById('tabRegister');
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                tabLogin.classList.add('bg-white', 'text-[#A51C30]', 'shadow-sm');
+                tabLogin.classList.remove('text-gray-500');
+                tabRegister.classList.remove('bg-white', 'text-[#A51C30]', 'shadow-sm');
+                tabRegister.classList.add('text-gray-500');
+            } else {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                tabRegister.classList.add('bg-white', 'text-[#A51C30]', 'shadow-sm');
+                tabRegister.classList.remove('text-gray-500');
+                tabLogin.classList.remove('bg-white', 'text-[#A51C30]', 'shadow-sm');
+                tabLogin.classList.add('text-gray-500');
+            }
+        }
+
+        // Authentication
+        function handleLogin() {
+            // Simulate login
+            document.getElementById('authPage').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function handleRegister() {
+            alert('Pendaftaran berhasil! Silakan masuk.');
+            switchTab('login');
+        }
+
+        function logout() {
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('authPage').classList.remove('hidden');
+        }
+
+        // Navigation
+        function showPage(page) {
+            // Hide all pages
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('borrowPage').classList.add('hidden');
+            document.getElementById('collectionPage').classList.add('hidden');
+            
+            // Show selected page
+            document.getElementById(page + 'Page').classList.remove('hidden');
+            
+            // Update title
+            const titles = {
+                'home': 'Dashboard',
+                'borrow': 'Proses Peminjaman',
+                'collection': 'Koleksi Buku',
+                'members': 'Daftar Anggota',
+                'reports': 'Laporan'
+            };
+            document.getElementById('pageTitle').textContent = titles[page];
+            
+            lucide.createIcons();
+        }
+
+        // Borrowing Process Logic
+        let selectedBook = null;
+        let verifiedMember = null;
+
+        function checkAvailability() {
+            const search = document.getElementById('searchBook').value.toLowerCase();
+            const resultDiv = document.getElementById('availabilityResult');
+            
+            if (search.length < 3) {
+                resultDiv.classList.add('hidden');
+                return;
+            }
+
+            // Mock data
+            const books = [
+                { title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', available: true, location: 'Rak A-12' },
+                { title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', available: false, location: 'Rak B-05', reason: 'Sedang dipinjam' }
+            ];
+
+            const found = books.find(b => b.title.toLowerCase().includes(search) || b.author.toLowerCase().includes(search));
+
+            if (found) {
+                resultDiv.classList.remove('hidden');
+                if (found.available) {
+                    selectedBook = found;
+                    resultDiv.innerHTML = `
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-600 mt-0.5"></i>
+                            <div>
+                                <p class="font-medium text-green-700">Buku Tersedia</p>
+                                <p class="text-sm text-gray-600 mt-1">${found.title}</p>
+                                <p class="text-xs text-gray-500">Lokasi: ${found.location}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    selectedBook = null;
+                    resultDiv.innerHTML = `
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="x-circle" class="w-5 h-5 text-red-600 mt-0.5"></i>
+                            <div>
+                                <p class="font-medium text-red-700">Buku Tidak Tersedia</p>
+                                <p class="text-sm text-gray-600 mt-1">${found.title}</p>
+                                <p class="text-xs text-red-500">Status: ${found.reason}</p>
+                                <button class="mt-2 text-xs bg-[#A51C30] text-white px-3 py-1.5 rounded hover:bg-[#8B1530]">
+                                    Proses SOP Pengadaan
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                lucide.createIcons();
+                updateProcessButton();
+            }
+        }
+
+        function verifyMember() {
+            const ktm = document.getElementById('ktmInput').value;
+            const resultDiv = document.getElementById('memberResult');
+
+            if (ktm.length < 5) {
+                resultDiv.classList.add('hidden');
+                return;
+            }
+
+            // Mock verification
+            const members = [
+                { name: 'Ahmad Rizki', npm: '2021001', ktm: 'KTM-2021-001', status: 'active' },
+                { name: 'Siti Aminah', npm: '2021002', ktm: 'KTM-2021-002', status: 'suspended' }
+            ];
+
+            const member = members.find(m => m.ktm === ktm || m.npm === ktm);
+
+            if (member) {
+                resultDiv.classList.remove('hidden');
+                if (member.status === 'active') {
+                    verifiedMember = member;
+                    resultDiv.innerHTML = `
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="user-check" class="w-5 h-5 text-green-600 mt-0.5"></i>
+                            <div>
+                                <p class="font-medium text-green-700">Anggota Terverifikasi</p>
+                                <p class="text-sm text-gray-800 font-medium mt-1">${member.name}</p>
+                                <p class="text-xs text-gray-500">NPM: ${member.npm}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    verifiedMember = null;
+                    resultDiv.innerHTML = `
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="user-x" class="w-5 h-5 text-red-600 mt-0.5"></i>
+                            <div>
+                                <p class="font-medium text-red-700">Anggota Tidak Aktif</p>
+                                <p class="text-sm text-gray-600 mt-1">${member.name}</p>
+                                <p class="text-xs text-red-500">Status: Membership suspended</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                lucide.createIcons();
+                updateProcessButton();
+            } else {
+                verifiedMember = null;
+                resultDiv.classList.remove('hidden');
+                resultDiv.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600 mt-0.5"></i>
+                        <div>
+                            <p class="font-medium text-yellow-700">KTM Tidak Ditemukan</p>
+                            <p class="text-sm text-gray-600 mt-1">Nomor KTM tidak terdaftar dalam sistem</p>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+                updateProcessButton();
+            }
+        }
+
+        function updateProcessButton() {
+            const btn = document.getElementById('processBtn');
+            const summary = document.getElementById('loanSummary');
+
+            if (selectedBook && verifiedMember) {
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btn.classList.add('btn-harvard', 'text-white');
+                
+                summary.innerHTML = `
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Buku:</span>
+                        <span class="font-medium text-gray-800">${selectedBook.title}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Peminjam:</span>
+                        <span class="font-medium text-gray-800">${verifiedMember.name}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Tanggal:</span>
+                        <span class="font-medium text-gray-800">${new Date().toLocaleDateString('id-ID')}</span>
+                    </div>
+                `;
+            } else {
+                btn.disabled = true;
+                btn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                btn.classList.remove('btn-harvard', 'text-white');
+            }
+        }
+
+        function processLoan() {
+            if (!selectedBook || !verifiedMember) return;
+
+            alert(`Peminjaman berhasil!\n\nBuku: ${selectedBook.title}\nPeminjam: ${verifiedMember.name}\n\nBuku dan KTM dapat diberikan kepada anggota.`);
+            
+            // Reset form
+            document.getElementById('searchBook').value = '';
+            document.getElementById('ktmInput').value = '';
+            document.getElementById('availabilityResult').classList.add('hidden');
+            document.getElementById('memberResult').classList.add('hidden');
+            document.getElementById('loanSummary').innerHTML = '<p class="text-sm text-gray-400 italic">Belum ada data peminjaman</p>';
+            selectedBook = null;
+            verifiedMember = null;
+            updateProcessButton();
+        }
+    </script>
+</body>
+</html>
