@@ -1,9 +1,9 @@
-// server.js - Main Server File
+// index.js - Main Server File (MySQL Version for Vercel)
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const mysql2 = require('mysql2').verbose();
+const mysql = require('mysql2');
 const path = require('path');
 
 const app = express();
@@ -15,95 +15,100 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Database Setup
-const db = new mysql2.Database('./library.db', (err) => {
+// Database Setup (Menggunakan Environment Variables Cloud MySQL)
+const db = mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'library_db',
+    port: process.env.DB_PORT || 3306
+});
+
+db.connect((err) => {
     if (err) {
         console.error('Database connection failed:', err);
     } else {
-        console.log('Connected to SQLite database');
+        console.log('Connected to MySQL database');
         initializeDatabase();
     }
 });
 
-// Initialize Tables
+// Initialize Tables (Sintaks SQL disesuaikan untuk MySQL)
 function initializeDatabase() {
-    db.serialize(() => {
-        // Users table (Pustakawan & Admin)
-        db.run(`CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            full_name TEXT NOT NULL,
-            role TEXT DEFAULT 'librarian',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
+    // Users table (Pustakawan & Admin)
+    db.query(`CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        full_name VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'librarian',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
 
-        // Members table (Anggota)
-        db.run(`CREATE TABLE IF NOT EXISTS members (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            npm TEXT UNIQUE NOT NULL,
-            ktm_number TEXT UNIQUE NOT NULL,
-            full_name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            phone TEXT,
-            address TEXT,
-            status TEXT DEFAULT 'active',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
+    // Members table (Anggota)
+    db.query(`CREATE TABLE IF NOT EXISTS members (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        npm VARCHAR(50) UNIQUE NOT NULL,
+        ktm_number VARCHAR(50) UNIQUE NOT NULL,
+        full_name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        phone VARCHAR(20),
+        address TEXT,
+        status VARCHAR(50) DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
 
-        // Books table (Koleksi)
-        db.run(`CREATE TABLE IF NOT EXISTS books (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            isbn TEXT UNIQUE,
-            title TEXT NOT NULL,
-            author TEXT NOT NULL,
-            publisher TEXT,
-            year INTEGER,
-            category TEXT,
-            location TEXT,
-            status TEXT DEFAULT 'available',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
+    // Books table (Koleksi)
+    db.query(`CREATE TABLE IF NOT EXISTS books (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        isbn VARCHAR(50) UNIQUE,
+        title VARCHAR(255) NOT NULL,
+        author VARCHAR(255) NOT NULL,
+        publisher VARCHAR(255),
+        year INT,
+        category VARCHAR(100),
+        location VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'available',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
 
-        // Borrowings table (Peminjaman)
-        db.run(`CREATE TABLE IF NOT EXISTS borrowings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            book_id INTEGER NOT NULL,
-            member_id INTEGER NOT NULL,
-            borrow_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-            due_date DATETIME NOT NULL,
-            return_date DATETIME,
-            status TEXT DEFAULT 'active',
-            ktm_verified BOOLEAN DEFAULT 0,
-            librarian_id INTEGER,
-            notes TEXT,
-            FOREIGN KEY (book_id) REFERENCES books(id),
-            FOREIGN KEY (member_id) REFERENCES members(id),
-            FOREIGN KEY (librarian_id) REFERENCES users(id)
-        )`);
+    // Borrowings table (Peminjaman)
+    db.query(`CREATE TABLE IF NOT EXISTS borrowings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        book_id INT NOT NULL,
+        member_id INT NOT NULL,
+        borrow_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        due_date TIMESTAMP NOT NULL,
+        return_date TIMESTAMP NULL,
+        status VARCHAR(50) DEFAULT 'active',
+        ktm_verified BOOLEAN DEFAULT 0,
+        librarian_id INT,
+        notes TEXT,
+        FOREIGN KEY (book_id) REFERENCES books(id),
+        FOREIGN KEY (member_id) REFERENCES members(id),
+        FOREIGN KEY (librarian_id) REFERENCES users(id)
+    )`);
 
-        // Procurement SOP table (SOP Pengadaan)
-        db.run(`CREATE TABLE IF NOT EXISTS procurements (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            book_title TEXT NOT NULL,
-            author TEXT,
-            reason TEXT,
-            requester_id INTEGER,
-            status TEXT DEFAULT 'pending',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (requester_id) REFERENCES members(id)
-        )`);
+    // Procurement SOP table (SOP Pengadaan)
+    db.query(`CREATE TABLE IF NOT EXISTS procurements (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        book_title VARCHAR(255) NOT NULL,
+        author VARCHAR(255),
+        reason TEXT,
+        requester_id INT,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (requester_id) REFERENCES members(id)
+    )`);
 
-        // Insert default admin
-        const hashedPassword = bcrypt.hashSync('admin123', 10);
-        db.run(`INSERT OR IGNORE INTO users (username, password, full_name, role) 
-                VALUES ('admin', ?, 'Administrator', 'admin')`, [hashedPassword]);
-        
-        // Insert default librarian
-        const libPassword = bcrypt.hashSync('lib123', 10);
-        db.run(`INSERT OR IGNORE INTO users (username, password, full_name, role) 
-                VALUES ('pustakawan', ?, 'Pustakawan Utama', 'librarian')`, [libPassword]);
-    });
+    // Insert default admin & librarian (Menggunakan INSERT IGNORE khas MySQL)
+    const hashedPassword = bcrypt.hashSync('admin123', 10);
+    db.query(`INSERT IGNORE INTO users (username, password, full_name, role) 
+            VALUES ('admin', ?, 'Administrator', 'admin')`, [hashedPassword]);
+    
+    const libPassword = bcrypt.hashSync('lib123', 10);
+    db.query(`INSERT IGNORE INTO users (username, password, full_name, role) 
+            VALUES ('pustakawan', ?, 'Pustakawan Utama', 'librarian')`, [libPassword]);
 }
 
 // Authentication Middleware
@@ -124,24 +129,27 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// ==================== ROOT ROUTE ====================
+app.get('/', (req, res) => {
+    res.json({
+        message: "Welcome to Harvard Library API System",
+        status: "Server is running successfully on Vercel"
+    });
+});
+
 // ==================== AUTH ROUTES ====================
 
 // Login
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
 
-    db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
-        if (err) {
-            return res.status(500).json({ message: 'Database error' });
-        }
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
+    db.query('SELECT * FROM users WHERE username = ?', [username], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        if (results.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
 
+        const user = results[0];
         const validPassword = bcrypt.compareSync(password, user.password);
-        if (!validPassword) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
+        if (!validPassword) return res.status(401).json({ message: 'Invalid credentials' });
 
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role },
@@ -165,25 +173,24 @@ app.post('/api/auth/login', (req, res) => {
 app.post('/api/auth/register', (req, res) => {
     const { npm, ktm_number, full_name, email, phone, address } = req.body;
 
-    // Validation
     if (!npm || !ktm_number || !full_name || !email) {
         return res.status(400).json({ message: 'Required fields missing' });
     }
 
-    db.run(
+    db.query(
         `INSERT INTO members (npm, ktm_number, full_name, email, phone, address) 
          VALUES (?, ?, ?, ?, ?, ?)`,
         [npm, ktm_number, full_name, email, phone, address],
-        function(err) {
+        (err, result) => {
             if (err) {
-                if (err.message.includes('UNIQUE constraint failed')) {
+                if (err.code === 'ER_DUP_ENTRY' || err.message.includes('UUID')) {
                     return res.status(409).json({ message: 'NPM, KTM, or Email already exists' });
                 }
                 return res.status(500).json({ message: 'Registration failed' });
             }
             res.status(201).json({
                 message: 'Member registered successfully',
-                member_id: this.lastID
+                member_id: result.insertId
             });
         }
     );
@@ -193,11 +200,9 @@ app.post('/api/auth/register', (req, res) => {
 
 // Get all members
 app.get('/api/members', authenticateToken, (req, res) => {
-    db.all('SELECT * FROM members ORDER BY created_at DESC', [], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ message: 'Database error' });
-        }
-        res.json(rows);
+    db.query('SELECT * FROM members ORDER BY created_at DESC', (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        res.json(results);
     });
 });
 
@@ -205,17 +210,13 @@ app.get('/api/members', authenticateToken, (req, res) => {
 app.get('/api/members/verify/:identifier', authenticateToken, (req, res) => {
     const { identifier } = req.params;
     
-    db.get(
+    db.query(
         'SELECT * FROM members WHERE ktm_number = ? OR npm = ?',
         [identifier, identifier],
-        (err, member) => {
-            if (err) {
-                return res.status(500).json({ message: 'Database error' });
-            }
-            if (!member) {
-                return res.status(404).json({ message: 'Member not found' });
-            }
-            res.json(member);
+        (err, results) => {
+            if (err) return res.status(500).json({ message: 'Database error' });
+            if (results.length === 0) return res.status(404).json({ message: 'Member not found' });
+            res.json(results[0]);
         }
     );
 });
@@ -225,13 +226,11 @@ app.patch('/api/members/:id/status', authenticateToken, (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    db.run(
+    db.query(
         'UPDATE members SET status = ? WHERE id = ?',
         [status, id],
-        function(err) {
-            if (err) {
-                return res.status(500).json({ message: 'Update failed' });
-            }
+        (err, result) => {
+            if (err) return res.status(500).json({ message: 'Update failed' });
             res.json({ message: 'Member status updated' });
         }
     );
@@ -256,11 +255,9 @@ app.get('/api/books', authenticateToken, (req, res) => {
 
     query += ' ORDER BY created_at DESC';
 
-    db.all(query, params, (err, rows) => {
-        if (err) {
-            return res.status(500).json({ message: 'Database error' });
-        }
-        res.json(rows);
+    db.query(query, params, (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        res.json(results);
     });
 });
 
@@ -268,14 +265,10 @@ app.get('/api/books', authenticateToken, (req, res) => {
 app.get('/api/books/:id', authenticateToken, (req, res) => {
     const { id } = req.params;
     
-    db.get('SELECT * FROM books WHERE id = ?', [id], (err, book) => {
-        if (err) {
-            return res.status(500).json({ message: 'Database error' });
-        }
-        if (!book) {
-            return res.status(404).json({ message: 'Book not found' });
-        }
-        res.json(book);
+    db.query('SELECT * FROM books WHERE id = ?', [id], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        if (results.length === 0) return res.status(404).json({ message: 'Book not found' });
+        res.json(results[0]);
     });
 });
 
@@ -283,17 +276,15 @@ app.get('/api/books/:id', authenticateToken, (req, res) => {
 app.post('/api/books', authenticateToken, (req, res) => {
     const { isbn, title, author, publisher, year, category, location } = req.body;
 
-    db.run(
+    db.query(
         `INSERT INTO books (isbn, title, author, publisher, year, category, location) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [isbn, title, author, publisher, year, category, location],
-        function(err) {
-            if (err) {
-                return res.status(500).json({ message: 'Failed to add book' });
-            }
+        (err, result) => {
+            if (err) return res.status(500).json({ message: 'Failed to add book' });
             res.status(201).json({
                 message: 'Book added successfully',
-                book_id: this.lastID
+                book_id: result.insertId
             });
         }
     );
@@ -304,13 +295,11 @@ app.patch('/api/books/:id/status', authenticateToken, (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    db.run(
+    db.query(
         'UPDATE books SET status = ? WHERE id = ?',
         [status, id],
-        function(err) {
-            if (err) {
-                return res.status(500).json({ message: 'Update failed' });
-            }
+        (err, result) => {
+            if (err) return res.status(500).json({ message: 'Update failed' });
             res.json({ message: 'Book status updated' });
         }
     );
@@ -318,60 +307,48 @@ app.patch('/api/books/:id/status', authenticateToken, (req, res) => {
 
 // ==================== BORROWING ROUTES ====================
 
-// Process borrowing (Main SOP)
+// Process borrowing
 app.post('/api/borrowings', authenticateToken, (req, res) => {
     const { book_id, member_id, ktm_verified, notes } = req.body;
 
-    // Validation according to SOP
     if (!book_id || !member_id) {
         return res.status(400).json({ message: 'Book ID and Member ID required' });
     }
-
     if (!ktm_verified) {
         return res.status(400).json({ message: 'KTM must be verified before borrowing' });
     }
 
-    // Check if member is active
-    db.get('SELECT status FROM members WHERE id = ?', [member_id], (err, member) => {
-        if (err || !member) {
-            return res.status(404).json({ message: 'Member not found' });
-        }
-        if (member.status !== 'active') {
-            return res.status(400).json({ message: 'Member account is not active' });
-        }
+    // Check member status
+    db.query('SELECT status FROM members WHERE id = ?', [member_id], (err, memberResults) => {
+        if (err || memberResults.length === 0) return res.status(404).json({ message: 'Member not found' });
+        if (memberResults[0].status !== 'active') return res.status(400).json({ message: 'Member account is not active' });
 
         // Check book availability
-        db.get('SELECT status FROM books WHERE id = ?', [book_id], (err, book) => {
-            if (err || !book) {
-                return res.status(404).json({ message: 'Book not found' });
-            }
-            if (book.status !== 'available') {
-                return res.status(400).json({ 
-                    message: 'Book is not available',
-                    status: book.status 
-                });
+        db.query('SELECT status FROM books WHERE id = ?', [book_id], (err, bookResults) => {
+            if (err || bookResults.length === 0) return res.status(404).json({ message: 'Book not found' });
+            if (bookResults[0].status !== 'available') {
+                return res.status(400).json({ message: 'Book is not available', status: bookResults[0].status });
             }
 
             // Calculate due date (14 days from now)
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + 14);
+            const formattedDueDate = dueDate.toISOString().slice(0, 19).replace('T', ' ');
 
             // Create borrowing record
-            db.run(
+            db.query(
                 `INSERT INTO borrowings (book_id, member_id, due_date, ktm_verified, librarian_id, notes) 
                  VALUES (?, ?, ?, ?, ?, ?)`,
-                [book_id, member_id, dueDate.toISOString(), ktm_verified, req.user.id, notes],
-                function(err) {
-                    if (err) {
-                        return res.status(500).json({ message: 'Borrowing process failed' });
-                    }
+                [book_id, member_id, formattedDueDate, ktm_verified, req.user.id, notes],
+                (err, borrowResult) => {
+                    if (err) return res.status(500).json({ message: 'Borrowing process failed' });
 
                     // Update book status
-                    db.run('UPDATE books SET status = ? WHERE id = ?', ['borrowed', book_id]);
+                    db.query('UPDATE books SET status = ? WHERE id = ?', ['borrowed', book_id]);
 
                     res.status(201).json({
                         message: 'Borrowing processed successfully',
-                        borrowing_id: this.lastID,
+                        borrowing_id: borrowResult.insertId,
                         due_date: dueDate
                     });
                 }
@@ -401,11 +378,9 @@ app.get('/api/borrowings', authenticateToken, (req, res) => {
 
     query += ' ORDER BY b.borrow_date DESC';
 
-    db.all(query, params, (err, rows) => {
-        if (err) {
-            return res.status(500).json({ message: 'Database error' });
-        }
-        res.json(rows);
+    db.query(query, params, (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        res.json(results);
     });
 });
 
@@ -413,20 +388,15 @@ app.get('/api/borrowings', authenticateToken, (req, res) => {
 app.patch('/api/borrowings/:id/return', authenticateToken, (req, res) => {
     const { id } = req.params;
 
-    db.run(
-        `UPDATE borrowings 
-         SET status = 'returned', return_date = CURRENT_TIMESTAMP 
-         WHERE id = ?`,
+    db.query(
+        `UPDATE borrowings SET status = 'returned', return_date = CURRENT_TIMESTAMP WHERE id = ?`,
         [id],
-        function(err) {
-            if (err) {
-                return res.status(500).json({ message: 'Return process failed' });
-            }
+        (err, result) => {
+            if (err) return res.status(500).json({ message: 'Return process failed' });
 
-            // Update book status back to available
-            db.get('SELECT book_id FROM borrowings WHERE id = ?', [id], (err, row) => {
-                if (row) {
-                    db.run('UPDATE books SET status = ? WHERE id = ?', ['available', row.book_id]);
+            db.query('SELECT book_id FROM borrowings WHERE id = ?', [id], (err, rows) => {
+                if (rows && rows.length > 0) {
+                    db.query('UPDATE books SET status = ? WHERE id = ?', ['available', rows[0].book_id]);
                 }
             });
 
@@ -435,40 +405,33 @@ app.patch('/api/borrowings/:id/return', authenticateToken, (req, res) => {
     );
 });
 
-// ==================== PROCUREMENT SOP ROUTES ====================
+// ==================== PROCUREMENT ROUTES ====================
 
-// Create procurement request (when book not available)
 app.post('/api/procurements', authenticateToken, (req, res) => {
     const { book_title, author, reason, requester_id } = req.body;
 
-    db.run(
-        `INSERT INTO procurements (book_title, author, reason, requester_id) 
-         VALUES (?, ?, ?, ?)`,
+    db.query(
+        `INSERT INTO procurements (book_title, author, reason, requester_id) VALUES (?, ?, ?, ?)`,
         [book_title, author, reason, requester_id],
-        function(err) {
-            if (err) {
-                return res.status(500).json({ message: 'Procurement request failed' });
-            }
+        (err, result) => {
+            if (err) return res.status(500).json({ message: 'Procurement request failed' });
             res.status(201).json({
                 message: 'Procurement SOP initiated',
-                procurement_id: this.lastID
+                procurement_id: result.insertId
             });
         }
     );
 });
 
-// Get all procurements
 app.get('/api/procurements', authenticateToken, (req, res) => {
-    db.all(`
+    db.query(`
         SELECT p.*, m.full_name as requester_name 
         FROM procurements p
         LEFT JOIN members m ON p.requester_id = m.id
         ORDER BY p.created_at DESC
-    `, [], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ message: 'Database error' });
-        }
-        res.json(rows);
+    `, (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        res.json(results);
     });
 });
 
@@ -477,20 +440,16 @@ app.get('/api/procurements', authenticateToken, (req, res) => {
 app.get('/api/dashboard/stats', authenticateToken, (req, res) => {
     const stats = {};
 
-    db.get('SELECT COUNT(*) as count FROM books', [], (err, row) => {
-        stats.totalBooks = row.count;
-        
-        db.get("SELECT COUNT(*) as count FROM books WHERE status = 'available'", [], (err, row) => {
-            stats.availableBooks = row.count;
-            
-            db.get("SELECT COUNT(*) as count FROM borrowings WHERE status = 'active'", [], (err, row) => {
-                stats.activeBorrowings = row.count;
-                
-                db.get('SELECT COUNT(*) as count FROM members', [], (err, row) => {
-                    stats.totalMembers = row.count;
-                    
-                    db.get("SELECT COUNT(*) as count FROM borrowings WHERE status = 'pending'", [], (err, row) => {
-                        stats.pendingRequests = row.count;
+    db.query('SELECT COUNT(*) as count FROM books', (err, r1) => {
+        stats.totalBooks = r1[0].count;
+        db.query("SELECT COUNT(*) as count FROM books WHERE status = 'available'", (err, r2) => {
+            stats.availableBooks = r2[0].count;
+            db.query("SELECT COUNT(*) as count FROM borrowings WHERE status = 'active'", (err, r3) => {
+                stats.activeBorrowings = r3[0].count;
+                db.query('SELECT COUNT(*) as count FROM members', (err, r4) => {
+                    stats.totalMembers = r4[0].count;
+                    db.query("SELECT COUNT(*) as count FROM borrowings WHERE status = 'pending'", (err, r5) => {
+                        stats.pendingRequests = r5[0].count;
                         res.json(stats);
                     });
                 });
@@ -508,7 +467,6 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, () => {
     console.log(`Harvard Library Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 module.exports = app;
